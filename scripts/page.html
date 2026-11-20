@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon API 本机配置</title>
+  <script src="/page.js" defer></script>
+  <style>
+    :root {
+      color-scheme: light; --ink: #172329; --muted: #536267; --line: #d6dedb;
+      --accent: #195346; --paper: #fffdf9;
+      font: 16px/1.6 system-ui, sans-serif; background: #f1f4f0; color: var(--ink);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 980px; margin: auto; padding: clamp(24px, 5vw, 60px) 22px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+    h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.2; letter-spacing: -.035em; margin: 0 0 8px; }
+    p { margin: 0; color: var(--muted); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr)); gap: 16px; }
+    article, section { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: clamp(16px, 3vw, 25px); min-width: 0; }
+    section { margin-top: 16px; }
+    h2 { font-size: 1.25rem; margin: 0 0 4px; }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    .card-title, .buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .card-title { justify-content: space-between; }
+    output { color: var(--accent); font-size: .87rem; }
+    .links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; font-size: .88rem; }
+    label { display: block; font-size: .9rem; font-weight: 600; margin-top: 12px; }
+    input, select, button { font: inherit; }
+    input, select { display: block; border: 1px solid #a6b7b0; border-radius: 7px; color: var(--ink); background: #fff; padding: 8px 10px; }
+    input { width: 100%; margin-top: 4px; }
+    select { min-width: 135px; }
+    .buttons { margin-top: 16px; }
+    button { cursor: pointer; font-weight: 700; padding: 8px 14px; border: 1px solid var(--accent); border-radius: 7px; color: #fff; background: var(--accent); }
+    button.secondary { color: var(--accent); background: transparent; }
+    button:disabled { opacity: .55; cursor: wait; }
+    :focus-visible { outline: 2px solid #267f68; outline-offset: 2px; }
+    [role="status"] { min-height: 1.6em; margin-top: 12px; font-size: .9rem; }
+    #consent:not([hidden]) { display: inline-block; font-weight: 700; margin-top: 18px; }
+    #redeem-form { margin-top: 14px; }
+    .error { color: #a32e27; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Amazon API 本机配置</h1>
+      <p>凭据保存在当前 Mac 的登录钥匙串。可以分次填写。</p>
+    </div>
+    <label>授权与验证区域
+      <select id="region">
+        <option value="na">北美（NA）</option>
+        <option value="eu">欧洲（EU）</option>
+        <option value="fe">远东（FE）</option>
+      </select>
+    </label>
+  </header>
+  <div class="cards">
+    <article>
+      <div class="card-title"><h2>SP-API</h2><output id="sp-count" aria-label="SP-API 已保存项">检查中</output></div>
+      <div class="links">
+        <a href="https://solutionproviderportal.amazon.com/" target="_blank" rel="noopener noreferrer">开发者门户</a>
+        <a href="https://developer-docs.amazon.com/sp-api/docs/self-authorization" target="_blank" rel="noopener noreferrer">私有应用自授权</a>
+      </div>
+      <form id="sp-form" method="post" autocomplete="off" aria-label="SP-API 凭据"></form>
+    </article>
+    <article>
+      <div class="card-title"><h2>Amazon Ads API</h2><output id="ads-count" aria-label="广告 API 已保存项">检查中</output></div>
+      <div class="links">
+        <a href="https://developer.amazon.com/loginwithamazon/console/site/lwa/overview.html" target="_blank" rel="noopener noreferrer">Login with Amazon 控制台</a>
+        <a href="https://advertising.amazon.com/about-api" target="_blank" rel="noopener noreferrer">申请广告 API</a>
+      </div>
+      <form id="ads-form" method="post" autocomplete="off" aria-label="广告 API 凭据"></form>
+    </article>
+  </div>
+  <section aria-labelledby="oauth-heading">
+    <h2 id="oauth-heading">获取广告 API Refresh Token</h2>
+    <p>先保存广告应用的 Client ID 和 Client Secret。在该应用的 <strong>Web Settings → Allowed Return URLs</strong> 复制已登记的 HTTPS 地址。</p>
+    <div class="links"><a href="https://advertising.amazon.com/API/docs/en-us/guides/account-management/authorization/authorization-grants" target="_blank" rel="noopener noreferrer">Amazon Ads 官方授权步骤</a></div>
+    <form id="authorize-form" method="post" autocomplete="off">
+      <label>已登记的 HTTPS 回跳地址<input type="url" name="redirectUri" maxlength="8192" placeholder="https://www.amazon.com/" required></label>
+      <div class="buttons"><button type="submit">生成授权链接</button></div>
+    </form>
+    <a id="consent" target="_blank" rel="noopener noreferrer" hidden>打开 Amazon 授权页</a>
+    <form id="redeem-form" method="post" autocomplete="off" hidden>
+      <label>同意后，粘贴浏览器地址栏里的完整回跳地址
+        <input type="password" name="returnAddress" spellcheck="false" autocomplete="new-password" maxlength="16384" required>
+      </label>
+      <div class="buttons"><button type="submit">兑换并保存 Refresh Token</button></div>
+    </form>
+    <p id="oauth-message" role="status"></p>
+  </section>
+  <noscript>请开启浏览器 JavaScript 后重新打开页面。</noscript>
+</main>
+<template id="credential-fields">
+  <label>LWA Client ID<input name="clientId" type="password" maxlength="8192" autocomplete="new-password" spellcheck="false"></label>
+  <label>LWA Client Secret<input name="clientSecret" type="password" maxlength="8192" autocomplete="new-password" spellcheck="false"></label>
+  <label>Refresh Token<input name="refreshToken" type="password" maxlength="8192" autocomplete="new-password" spellcheck="false"></label>
+  <div class="buttons">
+    <button type="submit">保存到钥匙串</button>
+    <button type="button" class="secondary">验证连接</button>
+  </div>
+  <p role="status"></p>
+</template>
+</body>
+</html>

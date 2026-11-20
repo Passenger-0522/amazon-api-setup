@@ -1,0 +1,3 @@
+interface:
+  display_name: "Amazon API 配置"
+  short_description: "配置 SP-API 与 Amazon Ads API，并在本机保存和验证凭据"
